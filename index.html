@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple AI Chat</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AI Chat</h1>
+        </div>
+        
+        <div class="messages" id="messages"></div>
+        
+        <div class="input-area">
+            <input 
+                type="text" 
+                id="messageInput" 
+                placeholder="Type your message..."
+                autocomplete="off"
+            >
+            <button id="sendBtn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        
+        // Change this to your backend URL
+        const API_URL = 'http://localhost:8080/api/chat';
+        
+        function addMessage(content, role) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            
+            messageDiv.appendChild(contentDiv);
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            addMessage(message, 'user');
+            messageInput.value = '';
+            sendBtn.disabled = true;
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-3.5-turbo',
+                        messages: [{ role: 'user', content: message }]
+                    })
+                });
+                
+                const data = await response.json();
+                addMessage(data.choices[0].message.content, 'assistant');
+            } catch (error) {
+                addMessage('Error: Could not connect to server', 'assistant');
+            } finally {
+                sendBtn.disabled = false;
+                messageInput.focus();
+            }
+        }
+        
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+        
+        messageInput.focus();
+    </script>
+</body>
+</html>
