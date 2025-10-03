@@ -31,6 +31,6 @@ error handling minimal so it is easy to read and adapt.
 ### Tweaks
 
 - Change the `baseURL` or model in `main.ts` if you want to point at a different
-  proxy or model.
-- The proxy currently targets `https://ehbp.inf6.tinfoil.sh`; edit `main.go` if
+  backend or model. Defaults are `http://localhost:8080` and `gpt-oss-120b`.
+- The enclave currently targets `https://ehbp.inf6.tinfoil.sh`; edit `main.go` if
   you are testing another environment.
