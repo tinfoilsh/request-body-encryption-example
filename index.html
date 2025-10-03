@@ -31,8 +31,6 @@
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
 
-        const API_URL = 'http://localhost:8080/v1/chat/completions';
-
         function addMessage(content, role) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
@@ -56,7 +54,7 @@
             try {
                 await window.tinfoil.ready;
 
-                const response = await window.tinfoil.client.fetch(API_URL, {
+                const response = await window.tinfoil.client.fetch('/v1/chat/completions', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
