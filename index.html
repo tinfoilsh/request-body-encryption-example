@@ -24,23 +24,21 @@
             <button id="sendBtn">Send</button>
         </div>
     </div>
+    <script type="module" src="main.ts"></script>
 
     <script>
         const messagesDiv = document.getElementById('messages');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
-        
-        // Change this to your backend URL
-        const API_URL = 'http://localhost:8080/api/chat';
-        
+
+        const API_URL = 'http://localhost:8080/v1/chat/completions';
+
         function addMessage(content, role) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
-            
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
             contentDiv.textContent = content;
-            
             messageDiv.appendChild(contentDiv);
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -55,13 +53,15 @@
             sendBtn.disabled = true;
             
             try {
-                const response = await fetch(API_URL, {
+                await window.tinfoil.ready;
+
+                const response = await window.tinfoil.client.fetch(API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        model: 'gpt-3.5-turbo',
+                        model: 'gpt-oss-120', // or any valid Tinfoil model id you use
                         messages: [{ role: 'user', content: message }]
                     })
                 });

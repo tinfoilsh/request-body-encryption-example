@@ -18,9 +18,9 @@ func main() {
 		}
 
 		// Just add API key and proxy everything
-		req, _ := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", r.Body)
+		req, _ := http.NewRequest("POST", "https://ehbp.inf6.tinfoil.sh/v1/chat/completions", r.Body)
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", "Bearer "+os.Getenv("OPENAI_API_KEY"))
+		req.Header.Set("Authorization", "Bearer "+os.Getenv("TINFOIL_API_KEY"))
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
