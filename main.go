@@ -8,12 +8,19 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/api/chat", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/v1/chat/completions", func(w http.ResponseWriter, r *http.Request) {
+		const (
+			allowHeaders  = "Content-Type, Ehbp-Client-Public-Key, Ehbp-Encapsulated-Key"
+			exposeHeaders = "Ehbp-Encapsulated-Key, Ehbp-Client-Public-Key, Ehbp-Fallback"
+		)
+
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", allowHeaders)
+		w.Header().Set("Access-Control-Expose-Headers", exposeHeaders)
 
 		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 
@@ -22,6 +29,14 @@ func main() {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+os.Getenv("TINFOIL_API_KEY"))
 
+		// Forward EHBP headers using canonical casing so Go preserves them
+		if clientPubKey := r.Header.Get("Ehbp-Client-Public-Key"); clientPubKey != "" {
+			req.Header.Set("Ehbp-Client-Public-Key", clientPubKey)
+		}
+		if encapsulatedKey := r.Header.Get("Ehbp-Encapsulated-Key"); encapsulatedKey != "" {
+			req.Header.Set("Ehbp-Encapsulated-Key", encapsulatedKey)
+		}
+
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
@@ -29,7 +44,17 @@ func main() {
 		}
 		defer resp.Body.Close()
 
-		w.Header().Set("Content-Type", "application/json")
+		for _, header := range []string{
+			"Ehbp-Encapsulated-Key",
+			"Ehbp-Client-Public-Key",
+			"Ehbp-Fallback",
+		} {
+			if value := resp.Header.Get(header); value != "" {
+				w.Header().Set(header, value)
+			}
+		}
+
+		w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
 		w.WriteHeader(resp.StatusCode)
 		io.Copy(w, resp.Body)
 	})
