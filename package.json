@@ -3,6 +3,6 @@
     "vite": "^7.1.9"
   },
   "dependencies": {
-    "tinfoil": "file:../tinfoil-node"
+    "tinfoil": "v0.8.5"
   }
 }
