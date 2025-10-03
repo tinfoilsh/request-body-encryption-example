@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "vite": "^7.1.9"
+  },
+  "dependencies": {
+    "tinfoil": "v0.8.5"
+  }
+}
