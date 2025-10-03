@@ -42,6 +42,7 @@
             messageDiv.appendChild(contentDiv);
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return contentDiv;
         }
         
         async function sendMessage() {
@@ -59,16 +60,88 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream',
                     },
                     body: JSON.stringify({
                         model: 'gpt-oss-120b',
-                        messages: [{ role: 'user', content: message }]
+                        messages: [{ role: 'user', content: message }],
+                        stream: true,
                     })
                 });
-                
-                const data = await response.json();
-                addMessage(data.choices[0].message.content, 'assistant');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const assistantContent = addMessage('', 'assistant');
+
+                const contentType = response.headers.get('Content-Type') || '';
+                const isStream = contentType.includes('text/event-stream');
+
+                if (!isStream || !response.body) {
+                    const data = await response.json();
+                    assistantContent.textContent = data.choices?.[0]?.message?.content ?? 'No content';
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let doneStreaming = false;
+
+                const processBuffer = (chunk, finalize = false) => {
+                    const events = chunk.split('\n\n');
+                    if (!finalize) {
+                        buffer = events.pop() ?? '';
+                    } else {
+                        buffer = '';
+                    }
+
+                    for (const event of events) {
+                        const lines = event.split('\n');
+                        let dataPayload = '';
+                        for (const line of lines) {
+                            if (line.startsWith('data:')) {
+                                dataPayload += line.slice(5).trim();
+                            }
+                        }
+                        if (!dataPayload) continue;
+                        if (dataPayload === '[DONE]') {
+                            doneStreaming = true;
+                            return;
+                        }
+                        try {
+                            const parsed = JSON.parse(dataPayload);
+                            const delta = parsed.choices?.[0]?.delta?.content ?? parsed.choices?.[0]?.message?.content ?? '';
+                            if (delta) {
+                                assistantContent.textContent += delta;
+                                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                            }
+                            if (parsed.error?.message) {
+                                assistantContent.textContent += `\nError: ${parsed.error.message}`;
+                                doneStreaming = true;
+                                return;
+                            }
+                        } catch (parseError) {
+                            console.error('Failed to parse stream chunk', parseError, dataPayload);
+                        }
+                    }
+                };
+
+                while (!doneStreaming) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    processBuffer(buffer, false);
+                }
+
+                buffer += decoder.decode();
+                if (buffer) {
+                    processBuffer(buffer, true);
+                }
             } catch (error) {
+                console.error('Send message failed', error);
                 addMessage('Error: Could not connect to server', 'assistant');
             } finally {
                 sendBtn.disabled = false;

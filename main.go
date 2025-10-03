@@ -10,7 +10,7 @@ import (
 func main() {
 	http.HandleFunc("/v1/chat/completions", func(w http.ResponseWriter, r *http.Request) {
 		const (
-			allowHeaders  = "Content-Type, Ehbp-Client-Public-Key, Ehbp-Encapsulated-Key"
+			allowHeaders  = "Accept, Authorization, Content-Type, Ehbp-Client-Public-Key, Ehbp-Encapsulated-Key"
 			exposeHeaders = "Ehbp-Encapsulated-Key, Ehbp-Client-Public-Key, Ehbp-Fallback"
 		)
 
@@ -54,9 +54,37 @@ func main() {
 			}
 		}
 
-		w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
+		if ct := resp.Header.Get("Content-Type"); ct != "" {
+			w.Header().Set("Content-Type", ct)
+		}
+		if te := resp.Header.Get("Transfer-Encoding"); te != "" {
+			w.Header().Set("Transfer-Encoding", te)
+			w.Header().Del("Content-Length")
+		}
+
 		w.WriteHeader(resp.StatusCode)
-		io.Copy(w, resp.Body)
+
+		if flusher, ok := w.(http.Flusher); ok {
+			buf := make([]byte, 32*1024)
+			for {
+				n, readErr := resp.Body.Read(buf)
+				if n > 0 {
+					if _, writeErr := w.Write(buf[:n]); writeErr != nil {
+						log.Printf("proxy write error: %v", writeErr)
+						break
+					}
+					flusher.Flush()
+				}
+				if readErr != nil {
+					if readErr != io.EOF {
+						log.Printf("proxy read error: %v", readErr)
+					}
+					break
+				}
+			}
+		} else {
+			io.Copy(w, resp.Body)
+		}
 	})
 
 	log.Println("Server on :8080")
