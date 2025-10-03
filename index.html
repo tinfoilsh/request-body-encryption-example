@@ -44,8 +44,6 @@
             messageDiv.appendChild(contentDiv);
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-            return contentDiv;
         }
         
         async function sendMessage() {
@@ -55,14 +53,12 @@
             addMessage(message, 'user');
             messageInput.value = '';
             sendBtn.disabled = true;
-            const assistantContentDiv = addMessage('', 'assistant');
             
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'text/event-stream',
                     },
                     body: JSON.stringify({
                         model: 'gpt-3.5-turbo',
@@ -70,51 +66,10 @@
                     })
                 });
                 
-                if (!response.ok) {
-                    throw new Error('Request failed');
-                }
-
-                const contentType = response.headers.get('content-type') || '';
-                if (contentType.includes('text/event-stream') && response.body) {
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
-                    let buffer = '';
-
-                    const flushEvents = () => {
-                        let boundary;
-                        while ((boundary = buffer.indexOf('\n\n')) !== -1) {
-                            const event = buffer.slice(0, boundary);
-                            buffer = buffer.slice(boundary + 2);
-                            for (const line of event.split('\n')) {
-                                if (!line.startsWith('data: ')) continue;
-                                const data = line.slice(6);
-                                if (data === '[DONE]') {
-                                    return true;
-                                }
-                                assistantContentDiv.textContent += data;
-                            }
-                        }
-                        return false;
-                    };
-
-                    while (true) {
-                        const { value, done } = await reader.read();
-                        if (value) {
-                            buffer += decoder.decode(value, { stream: true });
-                            if (flushEvents()) return;
-                        }
-                        if (done) {
-                            buffer += decoder.decode();
-                            flushEvents();
-                            return;
-                        }
-                    }
-                }
-
                 const data = await response.json();
-                assistantContentDiv.textContent = data.choices[0].message.content;
+                addMessage(data.choices[0].message.content, 'assistant');
             } catch (error) {
-                assistantContentDiv.textContent = 'Error: Could not connect to server';
+                addMessage('Error: Could not connect to server', 'assistant');
             } finally {
                 sendBtn.disabled = false;
                 messageInput.focus();
