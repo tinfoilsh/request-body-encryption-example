@@ -13,6 +13,7 @@ const (
 	exposeHeaders = "Ehbp-Encapsulated-Key, Ehbp-Client-Public-Key, Ehbp-Fallback"
 )
 
+// Tinfoil specific headers that need to be preserved
 var (
 	tinfoilRequestHeaders  = []string{"Ehbp-Client-Public-Key", "Ehbp-Encapsulated-Key"}
 	tinfoilResponseHeaders = []string{"Ehbp-Encapsulated-Key", "Ehbp-Client-Public-Key", "Ehbp-Fallback"}

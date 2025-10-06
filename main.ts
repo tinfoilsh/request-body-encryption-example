@@ -14,6 +14,7 @@ const messages = requireElement<HTMLDivElement>("#messages");
 const input = requireElement<HTMLInputElement>("#messageInput");
 const sendButton = requireElement<HTMLButtonElement>("#sendBtn");
 
+// Change baseURL to your own API server's URL
 const client = new SecureClient({
   baseURL: "http://localhost:8080/",
   enclaveURL: "https://ehbp.inf6.tinfoil.sh/v1/",
@@ -119,6 +120,8 @@ async function sendMessage(): Promise<void> {
   sendButton.disabled = true;
 
   try {
+    // We need to block on client readiness in order to perform verification
+    // and fetch request encryption keys from the enclave
     await client.ready();
 
     const response = await client.fetch("/v1/chat/completions", {
@@ -128,7 +131,7 @@ async function sendMessage(): Promise<void> {
         Accept: "text/event-stream",
       },
       body: JSON.stringify({
-        model: "gpt-oss-120b",
+        model: "gpt-oss-120b", // switch model to any model available in the tinfoil inference api: https://tinfoil.sh/inference
         messages: [{ role: "user", content: text }],
         stream: true,
       }),
