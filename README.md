@@ -1,12 +1,16 @@
-# Tinfoil Chat Demo
+# Request Body Encryption Example
 
-A tiny example that shows how to use the Tinfoil `SecureClient` from a browser. It
+A small example that demonstrates how to use the Tinfoil Request Body Encryption feature from a simple browser-based chat. It
 contains two pieces:
 
-- `main.go`: a Go proxy that adds your API key and forwards chat completions to
-the hosted HPKE service while preserving the EHBP headers.
-- `main.ts`: a few lines of TypeScript that instantiates `SecureClient`, sends
+- `main.go`: a Go proxy that adds your TINFOIL_API_KEY and forwards chat completions to
+the Tinfoil enclaves for inference.
+- `main.ts`: a few lines of TypeScript that instantiates the Tinfoil `SecureClient`, sends
   `/v1/chat/completions`, and streams the response into the page.
+
+In this example, the Go proxy only handles `/v1/chat/completions`. All other requests are handled directly by the Tinfoil backend and enclaves.
+
+The Tinfoil enclave that all chat completions requests must be forwarded to is currently accessible at `https://ehbp.inf6.tinfoil.sh/v1/chat/completions`.
 
 ## Prerequisites
 
@@ -17,7 +21,7 @@ the hosted HPKE service while preserving the EHBP headers.
 
 ```bash
 # Terminal 1 – start the proxy on http://localhost:8080
-export TINFOIL_API_KEY=sk-...
+export TINFOIL_API_KEY=tk-...
 go run main.go
 
 # Terminal 2 – serve the static files with Vite
@@ -31,6 +35,4 @@ error handling minimal so it is easy to read and adapt.
 ### Tweaks
 
 - Change the `baseURL` or model in `main.ts` if you want to point at a different
-  backend or model. Defaults are `http://localhost:8080` and `gpt-oss-120b`.
-- The enclave currently targets `https://ehbp.inf6.tinfoil.sh`; edit `main.go` if
-  you are testing another environment.
+  proxy server or model. Defaults are `http://localhost:8080` and `gpt-oss-120b`.
