@@ -36,3 +36,9 @@ error handling minimal so it is easy to read and adapt.
 
 - Change the `baseURL` or model in `main.ts` if you want to point at a different
   proxy server or model. Defaults are `http://localhost:8080` and `gpt-oss-120b`.
+
+### Advanced usage with unverified client
+
+Caution: This should only be used if you have alternate ways of performing client verification. This bypasses verification checks.
+
+In `main.ts`, replace `SecureClient` with `UnverifiedClient`. Run as usual.
